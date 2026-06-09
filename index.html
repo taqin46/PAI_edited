@@ -62,7 +62,7 @@ header{display:flex;align-items:center;gap:14px;padding:9px 18px;background:var(
 .score-wrap{text-align:center;margin-bottom:14px}
 .score-num{font-size:62px;font-weight:700;color:var(--accent);line-height:1}
 .score-sub{font-size:11px;color:var(--muted);margin-top:3px}
-.stat-row{display:flex;justify-content:center;gap:22px;margin-bottom:14px}
+.stat-row{display:none;justify-content:center;gap:22px;margin-bottom:14px}
 .stat-item{text-align:center}
 .stat-val{font-size:20px;font-weight:700}
 .stat-lbl{font-size:10px;color:var(--muted)}
@@ -403,7 +403,7 @@ function openSubmit() {
   document.getElementById("warn-box").style.display = configured ? "none" : "block";
   document.getElementById("send-status").textContent = "";
   document.getElementById("send-status").className = "send-status";
-  document.getElementById("btn-kirim").disabled = false;
+  document.getElementById("btn-kirim").disabled = _submitted;
   document.getElementById("btn-kirim").style.display = "inline-block";
   document.getElementById("btn-retry").style.display = "none";
   document.getElementById("modal").classList.add("show");
@@ -424,6 +424,7 @@ function closeModal() {
    dikirim ke server — cocok untuk Apps Script doGet().
    ============================================================ */
 var _lastPayloadUrl = null;
+var _submitted = false;   /* flag: sudah pernah kirim sukses */
 
 function buildPayloadUrl() {
   var sc = calcScore();
@@ -489,9 +490,10 @@ function sendToSheet() {
   fetch(_lastPayloadUrl, { method: "GET", mode: "no-cors" })
     .then(function() {
       /* no-cors selalu resolve (opaque response), anggap sukses */
+      _submitted = true;
       st.className = "send-status ok";
       st.textContent = "✓ Data berhasil dikirim! Periksa Google Sheet Anda.";
-      btn.disabled = false;
+      btn.disabled = true;   /* kunci permanen – hanya boleh kirim sekali */
       retry.style.display = "none";
     })
     .catch(function(err) {
@@ -499,9 +501,10 @@ function sendToSheet() {
       console.warn("fetch failed, trying image beacon:", err);
       var img = new Image();
       img.onload = img.onerror = function() {
+        _submitted = true;
         st.className = "send-status ok";
         st.textContent = "✓ Data terkirim via backup. Periksa Google Sheet Anda.";
-        btn.disabled = false;
+        btn.disabled = true;   /* kunci permanen – hanya boleh kirim sekali */
         retry.style.display = "none";
       };
       img.src = _lastPayloadUrl + "&t=" + Date.now();
